@@ -1,6 +1,6 @@
 {
   "name": "maws",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Message API for Websockets",
   "author": "Joe Hitchens <joe@sleepless.com> (sleepless.com)",
   "license": {
@@ -12,5 +12,5 @@
     "sleepless": "^2.0.0",
     "send": "^0.13.0"
   },
-  "main": "meet.js"
+  "main": "maws.js"
 }
