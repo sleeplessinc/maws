@@ -18,7 +18,7 @@
 		console.log(s)
 	} 
 
-	MAWS.dbg = function(s) { log("MAWS: "+s) }
+	// MAWS.dbg = function(s) { log("MAWS: "+s) }
 
 
 	cb_msg = function(m) {
@@ -33,7 +33,8 @@
 
 	send = function() {
 		var j = document.getElementById("msg").value
-		conn.send(j2o(j), function() {
+		conn.send(j2o(j), function(r) {
+			log("REPLY: "+o2j(r))
 		});
 	}
 

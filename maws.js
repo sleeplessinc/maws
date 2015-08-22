@@ -118,7 +118,7 @@ MAWS = {
 
 			// handle incoming messages from server
 			socket.onmessage = function(evt) {
-				D("<---<<"+evt.data)
+				D("<---<< "+evt.data)
 
 				var j = evt.data		// raw message is a utf8 string
 				var msg_in = j2o(j)
