@@ -2,85 +2,24 @@
 <html>
 <body>
 
-<style>
-	#chat_output {
-		border: solid 1px #ccc;
-		width: 400px;
-		height: 100px;
-		padding: 10px;
-		display: inline-block;
-		vertical-align: bottom;
-		overflow: auto;
-	}
-	#user_list {
-		border: solid 1px #ccc;
-		width: 150px;
-		height: 100px;
-		padding: 10px;
-		display: inline-block;
-		vertical-align: bottom;
-	}
-	#chat_entry {
-		width: 400px;
-		height: 40px;
-	}
-</style>
-
-<div id=chat_output></div>
-<div id=user_list>...</div>
-<br>
-<textarea id=chat_entry>Hi.</textarea><br>
-<input type=submit value="Send" onclick="send()">
-
-
 <pre id=dbg_output></pre>
 
 <script src="./sleepless.js"></script>
 <script src="./maws.js"></script>
 <script>
 
-	var chat_output = I("chat_output")
-	var chat_entry = I("chat_entry")
 	var dbg_output = I("dbg_output")
-	var user_list = I("user_list")
 
 	log = function(s) {
 		dbg_output.innerHTML = s+"\n"+dbg_output.innerHTML
 		console.log(s)
 	} 
 
-	// MAWS.dbg = function(s) { log("MAWS: "+s) }
+	//MAWS.dbg = function(s) { log("MAWS: "+s) }
 
 	cb_msg = function(m) {
-		log(o2j(m))
-
-		if(m.msg == "chat") {
-			var who = m.name
-			var text = m.text
-			s = "<b>"+who+": </b>"+text+"<br>";
-			chat_output.innerHTML = chat_output.innerHTML+"\n"+s
-			return
-		}
-
-		if(m.msg === "who") {
-			user_list.innerHTML = "---"
-			var s = ""
-			m.who.forEach(function(name) {
-				s += "<b>"+name+"</b><br>"
-			})
-			user_list.innerHTML = s
-			return
-		}
-
-		if(m.msg === "arrive") {
-			s = "<i>"+m.name+" has arrived</i><br>"
-			chat_output.innerHTML = chat_output.innerHTML+"\n"+s
-			return
-		}
-
-		if(m.msg === "depart") {
-			s = "<i>"+m.name+" has left</i><br>"
-			chat_output.innerHTML = chat_output.innerHTML+"\n"+s
+		if(m.msg == "ping") {
+			m.reply({msg:"pong"});
 			return
 		}
 	}
@@ -89,20 +28,22 @@
 		log("CTRL: "+m+", ["+o2j(x)+"]")
 
 		if(m === "disconnected") {
-			// reconnect
 			log("reconnecting ...");
 			setTimeout(function() {
 				conn = MAWS.connect(cb_msg, cb_ctrl)
 			}, 5000);
+			return
+		}
+
+		if(m === "connected") {
+			conn.send({msg:"hello"}, function(r) {
+				log("I've been welcomed as "+r.name)
+			});
+			return
 		}
 	}
 
 	conn = MAWS.connect(cb_msg, cb_ctrl)
-
-	send = function() {
-		var text = chat_entry.value
-		conn.send({msg:"chat", text:text})
-	}
 
 </script>
 
