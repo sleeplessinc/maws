@@ -1,1 +1,1 @@
-wsc.js
+maws.js
