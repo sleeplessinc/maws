@@ -102,7 +102,8 @@ MAWS = {
 				socket.send( o2j(m) ); 	// JSON encode outgoing msg and send it off
 			}
 
-			var socket = new WebSocket( "ws://"+document.location.host+"/"+path )
+			//var url = (tls ? "wss" : "ws")+"://"+document.location.host
+			var socket = new WebSocket( "wss://"+document.location.host+"/"+path )
 
 			socket.onerror = function(evt) {
 				cb_ctrl("error", evt.data);
