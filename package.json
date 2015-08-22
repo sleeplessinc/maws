@@ -11,5 +11,6 @@
     "websocket": "^1.0.19",
     "sleepless": "^2.0.0",
     "send": "^0.13.0"
-  }
+  },
+  "main": "meet.js"
 }
