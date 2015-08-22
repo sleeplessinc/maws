@@ -2,7 +2,7 @@
 maws = require("./maws.js");
 require("sleepless");
 
-maws.dbg = function(s) { log("MAWS: "+s) }
+//maws.dbg = function(s) { log("MAWS: "+s) }
 
 seq = 0
 
@@ -23,9 +23,6 @@ connect = function(req, cb_accept) {
 
 	var cb_ctrl = function(s, xtra) {
 		log("[CTRL] "+name+": "+s+", ["+o2j(xtra)+"]")
-		if(s === "close") {
-			return
-		}
 	}
 
 	conn = cb_accept(cb_msg, cb_ctrl)
