@@ -2,86 +2,108 @@
 <html>
 <body>
 
-<textarea id=msg cols=80 rows=10>{"msg":"ping"}</textarea><br>
+<style>
+	#chat_output {
+		border: solid 1px #ccc;
+		width: 400px;
+		height: 100px;
+		padding: 10px;
+		display: inline-block;
+		vertical-align: bottom;
+		overflow: auto;
+	}
+	#user_list {
+		border: solid 1px #ccc;
+		width: 150px;
+		height: 100px;
+		padding: 10px;
+		display: inline-block;
+		vertical-align: bottom;
+	}
+	#chat_entry {
+		width: 400px;
+		height: 40px;
+	}
+</style>
+
+<div id=chat_output></div>
+<div id=user_list>...</div>
+<br>
+<textarea id=chat_entry>Hi.</textarea><br>
 <input type=submit value="Send" onclick="send()">
 
 
-<pre id=out></pre>
+<pre id=dbg_output></pre>
 
 <script src="./sleepless.js"></script>
 <script src="./maws.js"></script>
 <script>
 
+	var chat_output = I("chat_output")
+	var chat_entry = I("chat_entry")
+	var dbg_output = I("dbg_output")
+	var user_list = I("user_list")
+
 	log = function(s) {
-		var e = I("out")
-		e.innerHTML = s+"\n"+e.innerHTML
+		dbg_output.innerHTML = s+"\n"+dbg_output.innerHTML
 		console.log(s)
 	} 
 
 	// MAWS.dbg = function(s) { log("MAWS: "+s) }
 
-
 	cb_msg = function(m) {
 		log(o2j(m))
+
+		if(m.msg == "chat") {
+			var who = m.name
+			var text = m.text
+			s = "<b>"+who+": </b>"+text+"<br>";
+			chat_output.innerHTML = chat_output.innerHTML+"\n"+s
+			return
+		}
+
+		if(m.msg === "who") {
+			user_list.innerHTML = "---"
+			var s = ""
+			m.who.forEach(function(name) {
+				s += "<b>"+name+"</b><br>"
+			})
+			user_list.innerHTML = s
+			return
+		}
+
+		if(m.msg === "arrive") {
+			s = "<i>"+m.name+" has arrived</i><br>"
+			chat_output.innerHTML = chat_output.innerHTML+"\n"+s
+			return
+		}
+
+		if(m.msg === "depart") {
+			s = "<i>"+m.name+" has left</i><br>"
+			chat_output.innerHTML = chat_output.innerHTML+"\n"+s
+			return
+		}
 	}
 
 	cb_ctrl = function(m, x) {
 		log("CTRL: "+m+", ["+o2j(x)+"]")
+
+		if(m === "disconnected") {
+			// reconnect
+			log("reconnecting ...");
+			setTimeout(function() {
+				conn = MAWS.connect(cb_msg, cb_ctrl)
+			}, 5000);
+		}
 	}
 
 	conn = MAWS.connect(cb_msg, cb_ctrl)
 
 	send = function() {
-		var j = document.getElementById("msg").value
-		conn.send(j2o(j), function(r) {
-			log("REPLY: "+o2j(r))
-		});
+		var text = chat_entry.value
+		conn.send({msg:"chat", text:text})
 	}
 
 </script>
-
-<script>
-	/*
-	msgs = function(m) {
-		m.reply({nick:"Bob"})
-
-	}
-
-	ctrls = function(s, con) {
-		if(s == "connect") {
-			setTimeout(function() {
-				con.send({msg:"sup?"}, function(r) {
-				})
-			}, 1000)
-		}
-		wrt("CONTROL MSG: "+s)
-	}
-
-	setTimeout(function() {
-		ws.dbg = wrt;
-		ws.connect("/", msgs, ctrls)
-	}, 1 * 1000)
-	*/
-	/*
-	setTimeout(function() {
-		ws.dbg = wrt;
-		wrt("connecting");	
-		con = ws.open("/wsrpc1.1/")
-		wrt("got a con");	
-		con.onmessage = function(m) {
-			wrt("onmessage "+o2j(m))
-		}
-		con.onerror = function(a, b, c) {
-			wrt("onerror "+o2j(a)+" "+b+" " +c)
-		}
-		con.send({msg:"system status"}, function(o) {
-			wrt("got response "+o2j(o))
-		})
-	}, 1000)
-	*/
-
-</script>
-
-
 
 
