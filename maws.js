@@ -15,15 +15,18 @@ MAWS = {
 	var time = function() { return Math.floor(new Date().getTime() / 1000) }
 	var D = function(s) { MAWS.dbg(s) }
 
+
 	var seq = 0;
 
+
+	// Used to store msgs that are awaiting a reply
 	var WaitList = function() {
 
 		var timer = null
-		var wraps = {}
-		var num = 0
+		var wraps = {}		// stores the msgs (inside a wrapper for tracking/expiration)
+		var num = 0			// # msgs waiting
 
-		// remove a msg from the waiting list
+		// Remove and return a msg from the list given its id
 		var rem = this.rem = function(id) {
 			var p = null
 			var w = wraps[id]
@@ -41,8 +44,9 @@ MAWS = {
 			return p
 		}
 
-		// put a msg into the waiting list
-		// ttl is in secs and should not be less than 10
+
+		// Put a msg into the list
+		// ttl is in secs and should not be less than 10 (default is 60 if not provided)
 		var ins = this.ins = function(p, id, ttl) {
 			D("inserting "+id+" "+o2j(p));
 			var w = {
@@ -110,6 +114,7 @@ MAWS = {
 				cb_ctrl("connected");
 			}
 
+			// handle incoming messages from server
 			socket.onmessage = function(evt) {
 				D("<---<<"+evt.data)
 
@@ -122,33 +127,36 @@ MAWS = {
 
 				if(msg_in.msg) {
 					// server initiated msg (not a reply)
-					D("initiated")
+
+					//D("server initiated msg")
 					msg_in.reply = function(data) {
 						send({ msg_id: msg_in.msg_id, response: data, })
 					}
+
 					// create an error function.
 					msg_in.error = function(err) {
 						send({ msg_id: msg_in.msg_id, error: err, response: null, });
 					}
-					D(" passing msg on "+o2j(msg_in))
+
 					cb_msg(msg_in)
+
 					return;
 				}
 				
 				if(msg_in.response) {
 					// response to a client initiated msg
-					D("reply to client initiated msg")
+
+					//D("reply to client initiated msg")
 					var x = waiting.rem(msg_in.msg_id); 
 					if(!x) {
-						//cb_ctrl("error", "invalid reply")
-						D("no matching msg for reply")
+						cb_ctrl("error", "invalid reply")
 						return;
 					}
+
 					// route response to associated call back
 					var m = x.msg
 					var cb = x.cb;
 					if(cb) {
-						D(" routing reply "+o2j(msg_in.response))
 						cb(msg_in.response);
 					}
 
@@ -177,7 +185,7 @@ MAWS = {
 				if(req.method == "GET") {
 					var send = require('send')
 					var path = require("url").parse(req.url).pathname
-					D("GET "+path);
+					//D("GET "+path);
 					send(req, path, {root: docroot || "docroot"}).on("error", function(e) {
 						r500(res)
 					}).pipe(res);
@@ -185,101 +193,105 @@ MAWS = {
 				else {
 					r500(res)
 				}
-			}).listen(port);
+			}).listen(port, function() {
+				D("listening on "+port);
 
-			// setup websockets
-			var websocket = require("websocket");
-			var wsd = new websocket.server({
-				httpServer: httpd,
-				autoAcceptConnections: false
-			});
+				// setup websockets
+				var websocket = require("websocket");
+				var wsd = new websocket.server({
+					httpServer: httpd,
+					autoAcceptConnections: false
+				});
 
-			wsd.on("request", function(req) {
-				D("incoming connection "+req)
-				cb_req(req, function(cb_msg, cb_ctrl) {
-					D("accepting connection")
+				wsd.on("request", function(req) {
+					D("incoming ws connection "+req.path)
+					cb_req(req, function(cb_msg, cb_ctrl) {
+						D("accepting connection")
 
-					var conn = {}
+						var conn = {}
 
-					var waiting = new WaitList()
+						var waiting = new WaitList()
 
-					// sends a msg to client
-					var send = conn.send = function(m, cb) {
-						D("send "+o2j(m))
-						if(m.msg_id === undefined) {
-							m.msg_id = "s"+(++seq); // every message must have an id
-						}
-						// put msg into waiting list if caller is expecting a reply
-						if(cb) {
-							waiting.ins({msg:m, cb:cb}, m.msg_id)
-						}
-
-						D("<---<< "+o2j(m))
-						socket.send( o2j(m) ); 	// JSON encode outgoing msg and send it off
-					};
-
-					var socket = conn.socket = req.accept(null, req.origin);
-
-					socket.on("error", function(err) {
-						cb_ctrl("error", err.toString());
-					});
-
-					socket.on("close", function() {
-						cb_ctrl("close")
-					});
-
-					// incoming msgs from client come through here
-					socket.on("message", function(x) {
-						D(">>---> "+x.utf8Data)
-
-						var j = x.utf8Data			// raw message is a utf8 string
-						var msg_in = j2o(j)
-						if(typeof msg_in !== "object") {
-							cb_ctrl("error", "unreadable message");
-							return;
-						}
-
-						if(msg_in.msg) {
-							D("initiated")
-							msg_in.reply = function(data) {
-								send({ msg_id: msg_in.msg_id, response: data, });
+						// sends a msg to client
+						var send = conn.send = function(m, cb) {
+							D("send "+o2j(m))
+							if(m.msg_id === undefined) {
+								m.msg_id = "s"+(++seq); // every message must have an id
 							}
-							// create an error function.
-							msg_in.error = function(err) {
-								send({ msg_id: msg_in.msg_id, error: err, response: null, });
+							// put msg into waiting list if caller is expecting a reply
+							if(cb) {
+								waiting.ins({msg:m, cb:cb}, m.msg_id)
 							}
-							D("  passing msg on "+o2j(msg_in))
-							cb_msg(msg_in)
-							return
-						}
 
-						if(msg_in.response) {
-							// response to a server initiated msg
-							D("reply to server initiated msg")
-							var x = waiting.rem(msg_in.msg_id);
-							if(!x) {
-								//cb_ctrl("error", "invalid reply ")
-								D("no matching msg for reply")
+							D("<---<< "+o2j(m))
+							socket.send( o2j(m) ); 	// JSON encode outgoing msg and send it off
+						};
+
+						var socket = conn.socket = req.accept(null, req.origin);
+
+						socket.on("error", function(err) {
+							cb_ctrl("error", err.toString());
+						});
+
+						socket.on("close", function() {
+							cb_ctrl("close")
+						});
+
+						// incoming msgs from client come through here
+						socket.on("message", function(x) {
+							D(">>---> "+x.utf8Data)
+
+							var j = x.utf8Data			// raw message is a utf8 string
+							var msg_in = j2o(j)
+							if(typeof msg_in !== "object") {
+								cb_ctrl("error", "unreadable message");
+								return;
+							}
+
+							if(msg_in.msg) {
+								D("initiated")
+								msg_in.reply = function(data) {
+									send({ msg_id: msg_in.msg_id, response: data, });
+								}
+								// create an error function.
+								msg_in.error = function(err) {
+									send({ msg_id: msg_in.msg_id, error: err, response: null, });
+								}
+								D("  passing msg on "+o2j(msg_in))
+								cb_msg(msg_in)
 								return
 							}
-							// route response to associated call back
-							var m = x.msg
-							var cb = x.cb;
-							if(cb) {
-								D(" routing reply "+o2j(msg_in.response))
-								cb(msg_in.response);
+
+							if(msg_in.response) {
+								// response to a server initiated msg
+								D("reply to server initiated msg")
+								var x = waiting.rem(msg_in.msg_id);
+								if(!x) {
+									//cb_ctrl("error", "invalid reply ")
+									D("no matching msg for reply")
+									return
+								}
+								// route response to associated call back
+								var m = x.msg
+								var cb = x.cb;
+								if(cb) {
+									D(" routing reply "+o2j(msg_in.response))
+									cb(msg_in.response);
+								}
+
+								return
 							}
 
-							return
-						}
+							cb_ctrl("error", "bad message");
+						})
 
-						cb_ctrl("error", "bad message");
-					})
+						cb_ctrl("connected");
 
-					cb_ctrl("connected");
-
-					return conn;
+						return conn;
+					});
 				});
+
+				D("ws ready");
 			});
 		}
 

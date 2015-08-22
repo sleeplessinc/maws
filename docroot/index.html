@@ -9,7 +9,7 @@
 <pre id=out></pre>
 
 <script src="./sleepless.js"></script>
-<script src="./wsc.js"></script>
+<script src="./maws.js"></script>
 <script>
 
 	log = function(s) {
@@ -18,7 +18,7 @@
 		console.log(s)
 	} 
 
-	WSC.dbg = log;
+	MAWS.dbg = log;
 
 
 	cb_msg = function(m) {
@@ -29,7 +29,7 @@
 		log("CTRL: "+m+", ["+o2j(x)+"]")
 	}
 
-	conn = WSC.connect(cb_msg, cb_ctrl)
+	conn = MAWS.connect(cb_msg, cb_ctrl)
 
 	send = function() {
 		var j = document.getElementById("msg").value
