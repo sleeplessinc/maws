@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<body>
+
+<textarea id=msg cols=80 rows=10>{"msg":"ping"}</textarea><br>
+<input type=submit value="Send" onclick="send()">
+
+
+<pre id=out></pre>
+
+<script src="./sleepless.js"></script>
+<script src="./wsc.js"></script>
+<script>
+
+	log = function(s) {
+		var e = I("out")
+		e.innerHTML = s+"\n"+e.innerHTML
+		console.log(s)
+	} 
+
+	WSC.dbg = log;
+
+
+	cb_msg = function(m) {
+		log("<---<< "+o2j(m))
+	}
+
+	cb_ctrl = function(m, x) {
+		log("CTRL: "+m+", ["+o2j(x)+"]")
+	}
+
+	conn = WSC.connect(cb_msg, cb_ctrl)
+
+	send = function() {
+		var j = document.getElementById("msg").value
+		conn.send(j2o(j), function() {
+		});
+	}
+
+</script>
+
+<script>
+	/*
+	msgs = function(m) {
+		m.reply({nick:"Bob"})
+
+	}
+
+	ctrls = function(s, con) {
+		if(s == "connect") {
+			setTimeout(function() {
+				con.send({msg:"sup?"}, function(r) {
+				})
+			}, 1000)
+		}
+		wrt("CONTROL MSG: "+s)
+	}
+
+	setTimeout(function() {
+		ws.dbg = wrt;
+		ws.connect("/", msgs, ctrls)
+	}, 1 * 1000)
+	*/
+	/*
+	setTimeout(function() {
+		ws.dbg = wrt;
+		wrt("connecting");	
+		con = ws.open("/wsrpc1.1/")
+		wrt("got a con");	
+		con.onmessage = function(m) {
+			wrt("onmessage "+o2j(m))
+		}
+		con.onerror = function(a, b, c) {
+			wrt("onerror "+o2j(a)+" "+b+" " +c)
+		}
+		con.send({msg:"system status"}, function(o) {
+			wrt("got response "+o2j(o))
+		})
+	}, 1000)
+	*/
+
+</script>
+
+
+
+
