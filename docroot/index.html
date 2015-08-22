@@ -18,11 +18,11 @@
 		console.log(s)
 	} 
 
-	MAWS.dbg = log;
+	MAWS.dbg = function(s) { log("MAWS: "+s) }
 
 
 	cb_msg = function(m) {
-		log("<---<< "+o2j(m))
+		log(o2j(m))
 	}
 
 	cb_ctrl = function(m, x) {

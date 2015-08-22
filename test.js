@@ -3,7 +3,7 @@ maws = require("./maws.js");
 require("sleepless");
 
 log = function(s) { console.log(s) }
-maws.dbg = log
+maws.dbg = function(s) { log("MAWS: "+s) }
 
 seq = 0
 clients = {}

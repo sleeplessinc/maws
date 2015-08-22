@@ -79,7 +79,6 @@ MAWS = {
 		// ===========================================================================
 
 		MAWS.connect = function(cb_msg, cb_ctrl, path) {
-			D("connect()")
 
 			cb_msg = cb_msg || function(){}
 			cb_ctrl = cb_ctrl || function(){}
@@ -90,7 +89,6 @@ MAWS = {
 			var waiting = new WaitList()
 
 			var send = conn.send = function(m, cb) {
-				D("send "+o2j(m))
 				if(m.msg_id === undefined) {
 					m.msg_id = "c"+(++seq); // every message must have an id
 				}
@@ -108,6 +106,10 @@ MAWS = {
 
 			socket.onerror = function(evt) {
 				cb_ctrl("error", evt.data);
+			}
+
+			socket.onclose = function() {
+				cb_ctrl("disconnected");
 			}
 
 			socket.onopen = function() {
@@ -128,12 +130,10 @@ MAWS = {
 				if(msg_in.msg) {
 					// server initiated msg (not a reply)
 
-					//D("server initiated msg")
 					msg_in.reply = function(data) {
 						send({ msg_id: msg_in.msg_id, response: data, })
 					}
 
-					// create an error function.
 					msg_in.error = function(err) {
 						send({ msg_id: msg_in.msg_id, error: err, response: null, });
 					}
@@ -146,10 +146,9 @@ MAWS = {
 				if(msg_in.response) {
 					// response to a client initiated msg
 
-					//D("reply to client initiated msg")
 					var x = waiting.rem(msg_in.msg_id); 
 					if(!x) {
-						cb_ctrl("error", "invalid reply")
+						cb_ctrl("warning", "invalid reply")
 						return;
 					}
 
@@ -176,16 +175,19 @@ MAWS = {
 		// node.js code (server)
 		// ===========================================================================
 
+		//var insp = require("util").inspect
+
 		MAWS.listen = function(port, cb_req, docroot) {
-			D(" listen port="+port+" docroot="+docroot)
 
 			// create http server
 			httpd = require('http').createServer(function(req, res) {
+
 				var r500 = function(res) { res.writeHead(500); res.end(); }
+
 				if(req.method == "GET") {
 					var send = require('send')
 					var path = require("url").parse(req.url).pathname
-					//D("GET "+path);
+					D("GET "+path);
 					send(req, path, {root: docroot || "docroot"}).on("error", function(e) {
 						r500(res)
 					}).pipe(res);
@@ -193,8 +195,8 @@ MAWS = {
 				else {
 					r500(res)
 				}
+
 			}).listen(port, function() {
-				D("listening on "+port);
 
 				// setup websockets
 				var websocket = require("websocket");
@@ -204,9 +206,9 @@ MAWS = {
 				});
 
 				wsd.on("request", function(req) {
-					D("incoming ws connection "+req.path)
+					D("ws connection request from "+req.remoteAddress+" "+req.resource) //httpRequest.url)
 					cb_req(req, function(cb_msg, cb_ctrl) {
-						D("accepting connection")
+						//D("accepting ws connection")
 
 						var conn = {}
 
@@ -214,7 +216,6 @@ MAWS = {
 
 						// sends a msg to client
 						var send = conn.send = function(m, cb) {
-							D("send "+o2j(m))
 							if(m.msg_id === undefined) {
 								m.msg_id = "s"+(++seq); // every message must have an id
 							}
@@ -249,33 +250,28 @@ MAWS = {
 							}
 
 							if(msg_in.msg) {
-								D("initiated")
+								// this is a message initiated by client
 								msg_in.reply = function(data) {
 									send({ msg_id: msg_in.msg_id, response: data, });
 								}
-								// create an error function.
 								msg_in.error = function(err) {
 									send({ msg_id: msg_in.msg_id, error: err, response: null, });
 								}
-								D("  passing msg on "+o2j(msg_in))
 								cb_msg(msg_in)
 								return
 							}
 
 							if(msg_in.response) {
-								// response to a server initiated msg
-								D("reply to server initiated msg")
+								// this is a response to a server initiated msg
 								var x = waiting.rem(msg_in.msg_id);
 								if(!x) {
-									//cb_ctrl("error", "invalid reply ")
-									D("no matching msg for reply")
+									cb_ctrl("warning", "invalid reply ")
 									return
 								}
 								// route response to associated call back
 								var m = x.msg
 								var cb = x.cb;
 								if(cb) {
-									D(" routing reply "+o2j(msg_in.response))
 									cb(msg_in.response);
 								}
 
@@ -291,7 +287,7 @@ MAWS = {
 					});
 				});
 
-				D("ws ready");
+				D("Listening on "+port);
 			});
 		}
 
