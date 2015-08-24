@@ -103,7 +103,8 @@ MAWS = {
 			}
 
 			//var url = (tls ? "wss" : "ws")+"://"+document.location.host
-			var socket = new WebSocket( "wss://"+document.location.host+"/"+path )
+			var loc = document.location
+			var socket = new WebSocket( (loc.protocol == "http:" ? "ws:" : "wss:") + "//"+loc.host+path )
 
 			socket.onerror = function(evt) {
 				cb_ctrl("error", evt.data);
