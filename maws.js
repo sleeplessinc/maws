@@ -4,7 +4,7 @@
 
 
 MAWS = {
-	dbg: function() {},
+	dbg: false,
 };
 
 
@@ -13,7 +13,7 @@ MAWS = {
 	var j2o = function(j) { try { return JSON.parse(j) } catch(e) { return null } }
 	var o2j = function(o) { try { return JSON.stringify(o) } catch(e) { return null } }
 	var time = function() { return Math.floor(new Date().getTime() / 1000) }
-	var D = function(s) { MAWS.dbg(s) }
+	var D = function(s) { if(MAWS.dbg) { console.log("MAWS: "+s); } }
 
 
 	var seq = 0;
@@ -39,7 +39,7 @@ MAWS = {
 					clearInterval(timer)
 					timer = null
 				}
-				D("removed "+id+" "+o2j(p));
+				D("forgetting "+id+" "+o2j(p));
 			}
 			return p
 		}
@@ -48,7 +48,7 @@ MAWS = {
 		// Put a msg into the list
 		// ttl is in secs and should not be less than 10 (default is 60 if not provided)
 		var ins = this.ins = function(p, id, ttl) {
-			D("inserting "+id+" "+o2j(p));
+			D("remembering "+id+" "+o2j(p));
 			var w = {
 				expire: time() + (ttl || 60),
 				payload: p,
@@ -89,6 +89,7 @@ MAWS = {
 			var waiting = new WaitList()
 
 			var send = conn.send = function(m, cb) {
+				D("send: "+o2j(m))
 				if(m.msg_id === undefined) {
 					m.msg_id = "c"+(++seq); // every message must have an id
 				}
@@ -107,15 +108,21 @@ MAWS = {
 			var socket = new WebSocket( (loc.protocol == "http:" ? "ws:" : "wss:") + "//"+loc.host+path )
 
 			socket.onerror = function(evt) {
+				D("error: "+evt.data);
 				cb_ctrl("error", evt.data);
 			}
 
 			socket.onclose = function() {
+				D("close");
 				cb_ctrl("disconnected");
 			}
 
 			socket.onopen = function() {
+				D("open");
 				cb_ctrl("connected");
+				//window.addEventListener('beforeunload', function(ev) {
+				//	D("closing socket ...");
+				//});
 			}
 
 			// handle incoming messages from server
@@ -129,7 +136,7 @@ MAWS = {
 					return;
 				}
 
-				if(msg_in.msg) {
+				if(typeof msg_in.msg !== "undefined") {
 					// server initiated msg (not a reply)
 
 					msg_in.reply = function(data) {
@@ -137,7 +144,8 @@ MAWS = {
 					}
 
 					msg_in.error = function(err) {
-						send({ msg_id: msg_in.msg_id, error: err, response: null, });
+						msg_in.reply({error:err});
+						//send({ msg_id: msg_in.msg_id, response: {error:err}, });
 					}
 
 					cb_msg(msg_in)
@@ -145,7 +153,7 @@ MAWS = {
 					return;
 				}
 				
-				if(msg_in.response) {
+				if(typeof msg_in.response !== "undefined") {
 					// response to a client initiated msg
 
 					var x = waiting.rem(msg_in.msg_id); 
@@ -237,7 +245,7 @@ MAWS = {
 						});
 
 						socket.on("close", function() {
-							cb_ctrl("close")
+							cb_ctrl("disconnect")
 						});
 
 						// incoming msgs from client come through here
@@ -257,7 +265,8 @@ MAWS = {
 									send({ msg_id: msg_in.msg_id, response: data, });
 								}
 								msg_in.error = function(err) {
-									send({ msg_id: msg_in.msg_id, error: err, response: null, });
+									//send({ msg_id: msg_in.msg_id, error: err, response: null, });
+									msg_in.reply({error:err});
 								}
 								cb_msg(msg_in)
 								return
