@@ -22,12 +22,13 @@ MAWS = {
 	// Used to store msgs that are awaiting a reply
 	var WaitList = function() {
 
+		var self = this;
 		var timer = null
 		var wraps = {}		// stores the msgs (inside a wrapper for tracking/expiration)
 		var num = 0			// # msgs waiting
 
 		// Remove and return a msg from the list given its id
-		var rem = this.rem = function(id) {
+		var rem = self.rem = function(id) {
 			var p = null
 			var w = wraps[id]
 			if(w) {
@@ -47,7 +48,7 @@ MAWS = {
 
 		// Put a msg into the list
 		// ttl is in secs and should not be less than 10 (default is 60 if not provided)
-		var ins = this.ins = function(p, id, ttl) {
+		var ins = self.ins = function(p, id, ttl) {
 			D("remembering "+id+" "+o2j(p));
 			var w = {
 				expire: time() + (ttl || 60),
@@ -80,8 +81,8 @@ MAWS = {
 
 		MAWS.connect = function(cb_msg, cb_ctrl, path) {
 
-			cb_msg = cb_msg || function(){}
-			cb_ctrl = cb_ctrl || function(){}
+			cb_msg = cb_msg || function() { D("MS???"); }
+			cb_ctrl = cb_ctrl || function() { D("CT???"); }
 			path = path || ""
 
 			var conn = {}
@@ -120,9 +121,6 @@ MAWS = {
 			socket.onopen = function() {
 				D("open");
 				cb_ctrl("connected");
-				//window.addEventListener('beforeunload', function(ev) {
-				//	D("closing socket ...");
-				//});
 			}
 
 			// handle incoming messages from server
@@ -145,14 +143,13 @@ MAWS = {
 
 					msg_in.error = function(err) {
 						msg_in.reply({error:err});
-						//send({ msg_id: msg_in.msg_id, response: {error:err}, });
 					}
 
 					cb_msg(msg_in)
 
 					return;
 				}
-				
+
 				if(typeof msg_in.response !== "undefined") {
 					// response to a client initiated msg
 
