@@ -81,7 +81,7 @@ MAWS = {
 		MAWS.connect = function(cb_msg, cb_ctrl, path) {
 
 			cb_msg = cb_msg || function(){}
-			cb_ctrl = cb_ctrl || function(){}
+			cb_ctrl = cb_ctrl || function(s){ D("CT???: "+s); }
 			path = path || ""
 
 			var conn = {}
