@@ -1,8 +1,7 @@
 
 maws = require("./maws.js");
-require("sleepless");
 
-//maws.dbg = function(s) { log("MAWS: "+s) }
+//maws.dbg = function(s) { console.log("MAWS: "+s) }
 
 seq = 0
 
@@ -11,21 +10,21 @@ connect = function(req, cb_accept) {
 	var name = "client-"+(seq += 1)
 
 	var cb_msg = function(m) {
-		log(name+": "+o2j(m))
+		console.log(name+": "+JSON.stringify(m))
 
 		if(m.msg == "hello") {
 			m.reply({msg:"welcome", name:name})
 			conn.send({msg:"ping"}, function(r) {
-				log(o2j(r));
+				console.log(JSON.stringify(r));
 			})
 		}
 	}
 
 	var cb_ctrl = function(s, xtra) {
-		log("[CTRL] "+name+": "+s+", ["+o2j(xtra)+"]")
+		console.log("[CTRL] "+name+": "+s+", ["+JSON.stringify(xtra)+"]")
 	}
 
-	conn = cb_accept(cb_msg, cb_ctrl)
+	var conn = cb_accept(cb_msg, cb_ctrl)
 
 }
 

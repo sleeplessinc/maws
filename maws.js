@@ -182,8 +182,6 @@ MAWS = {
 		// node.js code (server)
 		// ===========================================================================
 
-		//var insp = require("util").inspect
-
 		MAWS.listen = function(port, cb_req, docroot) {
 
 			// create http server

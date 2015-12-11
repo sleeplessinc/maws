@@ -4,15 +4,11 @@
 
 <pre id=dbg_output></pre>
 
-<script src="./sleepless.js"></script>
+<!--script src="./sleepless.js"></script-->
 <script src="./maws.js"></script>
 <script>
 
-	log = function(s) {
-		console.log(s)
-	} 
-
-	//MAWS.dbg = function(s) { log("MAWS: "+s) }
+	//MAWS.dbg = function(s) { console.log("MAWS: "+s) }
 
 	cb_msg = function(m) {
 		if(m.msg == "ping") {
@@ -22,10 +18,10 @@
 	}
 
 	cb_ctrl = function(m, x) {
-		log("CTRL: "+m+", ["+o2j(x)+"]")
+		document.write("CTRL: "+m+", ["+JSON.stringify(x)+"] <br>")
 
 		if(m === "disconnected") {
-			log("reconnecting ...");
+			document.write("I've been welcomed as "+r.name+" <br>")
 			setTimeout(function() {
 				conn = MAWS.connect(cb_msg, cb_ctrl)
 			}, 5000);
@@ -34,7 +30,7 @@
 
 		if(m === "connected") {
 			conn.send({msg:"hello"}, function(r) {
-				log("I've been welcomed as "+r.name)
+				document.write("I've been welcomed as "+r.name+" <br>")
 			});
 			return
 		}
