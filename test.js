@@ -1,7 +1,7 @@
 
 maws = require("./maws.js");
 
-//maws.dbg = function(s) { console.log("MAWS: "+s) }
+maws.dbg = function(s) { console.log("MAWS: "+s) }
 
 seq = 0
 
@@ -29,6 +29,4 @@ connect = function(req, cb_accept) {
 }
 
 maws.listen( 12345, connect, "docroot")
-
-
 

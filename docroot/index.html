@@ -21,7 +21,7 @@
 		document.write("CTRL: "+m+", ["+JSON.stringify(x)+"] <br>")
 
 		if(m === "disconnected") {
-			document.write("I've been welcomed as "+r.name+" <br>")
+			document.write("I've been disconnected.<br>")
 			setTimeout(function() {
 				conn = MAWS.connect(cb_msg, cb_ctrl)
 			}, 5000);

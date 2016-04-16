@@ -181,27 +181,38 @@ MAWS = {
 		// ===========================================================================
 		// node.js code (server)
 		// ===========================================================================
+	
+		//var util = require("util");
+		//var EventEmitter = require("events");
 
-		MAWS.listen = function(port, cb_req, docroot) {
+		MAWS.listen = function(port, cb_req, handle_http) {
+
+			// if handle_http is not a function, assume it's path to a file system directory and
+			// set up to provide simple, static webserver functionality
+			if(typeof handle_http !== "function") {
+
+				var docroot = handle_http;
+
+				handle_http = function(req, res) {
+					var r500 = function(res) { res.writeHead(500); res.end(); }
+
+					if(req.method == "GET") {
+						var send = require('send')
+						var path = require("url").parse(req.url).pathname
+						D("GET "+path);
+						send(req, path, {root: docroot}).on("error", function(e) {
+							r500(res)
+						}).pipe(res);
+					}
+					else {
+						r500(res)
+					}
+				}
+
+			}
 
 			// create http server
-			httpd = require('http').createServer(function(req, res) {
-
-				var r500 = function(res) { res.writeHead(500); res.end(); }
-
-				if(req.method == "GET") {
-					var send = require('send')
-					var path = require("url").parse(req.url).pathname
-					D("GET "+path);
-					send(req, path, {root: docroot || "docroot"}).on("error", function(e) {
-						r500(res)
-					}).pipe(res);
-				}
-				else {
-					r500(res)
-				}
-
-			}).listen(port, function() {
+			httpd = require('http').createServer(handle_http).listen(port, function() {
 
 				// setup websockets
 				var websocket = require("websocket");
