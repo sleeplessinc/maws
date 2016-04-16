@@ -76,7 +76,7 @@ MAWS = {
 	if((typeof process) === 'undefined') {
 
 		// ===========================================================================
-		// browser code (client)
+		// browser specific code (client)
 		// ===========================================================================
 
 		MAWS.connect = function(cb_msg, cb_ctrl, path) {
@@ -179,15 +179,12 @@ MAWS = {
 	else  {
 
 		// ===========================================================================
-		// node.js code (server)
+		// node.js specific code (server)
 		// ===========================================================================
 	
-		//var util = require("util");
-		//var EventEmitter = require("events");
-
 		MAWS.listen = function(port, cb_req, handle_http) {
 
-			// if handle_http is not a function, assume it's path to a file system directory and
+			// if handle_http is not a function, assume it's a path to a file system directory and
 			// set up to provide simple, static webserver functionality
 			if(typeof handle_http !== "function") {
 
