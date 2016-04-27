@@ -182,7 +182,7 @@ MAWS = {
 		// node.js specific code (server)
 		// ===========================================================================
 	
-		MAWS.listen = function(port, cb_req, handle_http) {
+		MAWS.listen = function(port, cb_req, handle_http, cb_listening) {
 
 			// if handle_http is not a function, assume it's a path to a file system directory and
 			// set up to provide simple, static webserver functionality
@@ -302,6 +302,9 @@ MAWS = {
 				});
 
 				D("Listening on "+port);
+				if(cb_listening) {
+					cb_listening();
+				}
 			});
 		}
 
