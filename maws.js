@@ -2,7 +2,6 @@
 // Copyright 2015  Sleepless Software Inc.  All Rights Reserved
 
 
-
 MAWS = {
 	dbg: false,
 };
@@ -182,13 +181,25 @@ MAWS = {
 		// node.js specific code (server)
 		// ===========================================================================
 	
-		MAWS.listen = function(port, cb_req, handle_http, cb_listening) {
+		MAWS.listen = function(opts, cb_req, handle_http, cb_listening) {
+
+			// if opts is a number, assume it's a port number
+			if(typeof opts === "number") {
+				opts = {
+					port: opts,
+					ssl: false,
+				};
+			}
+			else {
+				opts.ssl = opts.ssl ? true : false;
+				opts.port = opts.port || (opts.ssl ? 443 : 80);
+			}
 
 			// if handle_http is not a function, assume it's a path to a file system directory and
 			// set up to provide simple, static webserver functionality
 			if(typeof handle_http !== "function") {
 
-				var docroot = handle_http;
+				var doc_root = handle_http;
 
 				handle_http = function(req, res) {
 					var r500 = function(res) { res.writeHead(500); res.end(); }
@@ -197,7 +208,7 @@ MAWS = {
 						var send = require('send')
 						var path = require("url").parse(req.url).pathname
 						D("GET "+path);
-						send(req, path, {root: docroot}).on("error", function(e) {
+						send(req, path, {root: doc_root}).on("error", function(e) {
 							r500(res)
 						}).pipe(res);
 					}
@@ -209,7 +220,14 @@ MAWS = {
 			}
 
 			// create http server
-			httpd = require('http').createServer(handle_http).listen(port, function() {
+			var httpd = null;
+			if(opts.ssl) {
+				httpd = require('https').createServer({ key: opts.key, cert: opts.cert, }, handle_http);
+			}
+			else {
+				httpd = require('http').createServer(handle_http);
+			}
+			httpd.listen(opts.port, function() {
 
 				// setup websockets
 				var websocket = require("websocket");
@@ -219,9 +237,8 @@ MAWS = {
 				});
 
 				wsd.on("request", function(req) {
-					D("ws connection request from "+req.remoteAddress+" "+req.resource) //httpRequest.url)
+					D("ws connection request from "+req.remoteAddress+" "+req.resource)
 					cb_req(req, function(cb_msg, cb_ctrl) {
-						//D("accepting ws connection")
 
 						var conn = {}
 
@@ -271,7 +288,7 @@ MAWS = {
 									//send({ msg_id: msg_in.msg_id, error: err, response: null, });
 									msg_in.reply({error:err});
 								}
-								cb_msg(msg_in)
+								cb_msg(msg_in, conn)
 								return
 							}
 
@@ -301,7 +318,7 @@ MAWS = {
 					});
 				});
 
-				D("Listening on "+port);
+				D("Listening on "+opts.port);
 				if(cb_listening) {
 					cb_listening();
 				}
