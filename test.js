@@ -28,7 +28,19 @@ connect = function(req, cb_accept) {
 
 }
 
-maws.listen( 12345, connect, "docroot", function() {
-	console.log("Listening!");
-})
+
+if(process.argv.length < 4) {
+	maws.listen( 12345, connect, "docroot", function() {
+		console.log("http Listening!");
+	})
+}
+else {
+	fs = require('fs');
+	ssl_key = fs.readFileSync(process.argv[2]);
+	ssl_cert = fs.readFileSync(process.argv[3]);
+	maws.listen( { port: 12346, ssl: true, key:ssl_key, cert:ssl_cert }, connect, "docroot", function() {
+		console.log("https Listening!");
+	})
+}
+
 
