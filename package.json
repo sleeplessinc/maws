@@ -8,9 +8,9 @@
   },
   "repository": "git://github.com/sleeplessinc/maws.git",
   "dependencies": {
-    "websocket": "^1.0.19",
+    "send": "^0.13.0",
     "sleepless": "^2.0.0",
-    "send": "^0.13.0"
+    "websocket": "^1.0.26"
   },
   "main": "maws.js"
 }
